@@ -86,7 +86,7 @@ fun BotonSimondize(miViewModel: MyViewModel, enum_color: Colores) {
                     0.5f
                 ) else enum_color.color
             ),
-            modifier = Modifier.size(150.dp, 250.dp).padding(3.dp),
+            modifier = Modifier.size(150.dp, 250.dp).border(6.dp,Color.Black,RoundedCornerShape(6.dp)).padding(3.dp),
             shape = RoundedCornerShape(10.dp)
         ) {
             Text(text = enum_color.txt, fontSize = 0.sp)
@@ -102,7 +102,7 @@ fun BotonStart(miViewModel: MyViewModel) {
         colors = ButtonDefaults.buttonColors(
             containerColor = Color(0xFF14B8CC)
         ),
-        modifier = Modifier.size(160.dp, 70.dp).padding(3.dp),
+        modifier = Modifier.size(160.dp, 70.dp).border(6.dp,Color.Black,RoundedCornerShape(6.dp)).padding(3.dp),
         shape = RoundedCornerShape(10.dp)
     ) {
         Text(text = "Start", fontSize = 20.sp)
