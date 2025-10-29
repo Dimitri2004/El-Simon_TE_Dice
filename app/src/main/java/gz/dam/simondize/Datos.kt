@@ -1,10 +1,12 @@
 package gz.dam.simondize
 
 import androidx.compose.ui.graphics.Color
+import androidx.lifecycle.MutableLiveData
 
 
 object Datos {
     var ronda = 0   // <-- nueva variable para la ronda
+
 }
 
 /**
@@ -16,6 +18,8 @@ enum class Estado(val start_activo: Boolean, val boton_activo: Boolean) {
     INICIO(start_activo = true, boton_activo = false),
     GENERANDO(start_activo = false, boton_activo = false),
     ADIVINANDO(start_activo = false, boton_activo = true),
+    SIGUIENDO(start_activo = false, boton_activo = true),
+
 
 }
 
