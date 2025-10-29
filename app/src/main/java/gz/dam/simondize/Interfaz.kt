@@ -73,7 +73,6 @@ fun Interfaz(miViewModel: MyViewModel) {
 fun BotonSimondize(miViewModel: MyViewModel, enum_color: Colores) {
     val activo by miViewModel.botonActivo.observeAsState(-1)
     val isActive = activo == enum_color.ordinal
-    val isDisabled = miViewModel.estadoLiveData.observeAsState().value != Estado.SIGUIENDO
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
@@ -85,10 +84,7 @@ fun BotonSimondize(miViewModel: MyViewModel, enum_color: Colores) {
                 containerColor = if (isActive) enum_color.color.copy(
                     alpha = 0.4f,
                     0.5f
-                ) else (
-                    if (isDisabled) enum_color.color.copy(
-                    ) else enum_color.color
-                )
+                ) else enum_color.color
             ),
             modifier = Modifier.size(150.dp, 250.dp).padding(3.dp),
             shape = RoundedCornerShape(10.dp)
