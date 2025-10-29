@@ -13,7 +13,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            // llamamos a la IU pasando el ViewModel
             Interfaz(miViewModel)
         }
     }
