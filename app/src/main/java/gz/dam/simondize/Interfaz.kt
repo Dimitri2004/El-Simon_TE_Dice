@@ -1,5 +1,6 @@
 package gz.dam.simondize
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -17,17 +18,60 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.runtime.livedata.observeAsState
+import android.media.AudioManager
+import android.media.ToneGenerator
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 
 
 @Composable
 fun Interfaz(miViewModel: MyViewModel) {
+
+    // 🎵 Creamos un ToneGenerator que usaremos para los sonidos
+    val toneGen = remember { ToneGenerator(AudioManager.STREAM_MUSIC, 100) }
+
+    val botonActivo by miViewModel.botonActivo.observeAsState(-1)
+    val error by miViewModel.errorLiveData.observeAsState(false)
+    // 🔔 Sonar automáticamente cuando el ViewModel activa un botón
+    LaunchedEffect(botonActivo) {
+        when (botonActivo) {
+            0 -> toneGen.startTone(ToneGenerator.TONE_DTMF_1, 200) // DO
+            1 -> toneGen.startTone(ToneGenerator.TONE_DTMF_2, 200) // RE
+            2 -> toneGen.startTone(ToneGenerator.TONE_DTMF_3, 200) // MI
+            3 -> toneGen.startTone(ToneGenerator.TONE_DTMF_4, 200) // FA
+        }
+    }
+    LaunchedEffect(error) {
+        if (error) {
+            // Melodía descendente FA–MI–RE–DO
+            val notas = listOf(
+                ToneGenerator.TONE_DTMF_4,
+                ToneGenerator.TONE_DTMF_3,
+                ToneGenerator.TONE_DTMF_2,
+                ToneGenerator.TONE_DTMF_1
+            )
+            for (nota in notas) {
+                toneGen.startTone(nota, 150)
+                kotlinx.coroutines.delay(240)
+            }
+            // Reseteamos el flag
+            miViewModel.errorLiveData.value = false
+        }
+    }
+
+    // 🧹 Liberar recursos al salir
+    DisposableEffect(Unit) {
+        onDispose { toneGen.release() }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -46,15 +90,15 @@ fun Interfaz(miViewModel: MyViewModel) {
         ) {
             Column {
                 Row {
-                    BotonSimondize(miViewModel, Colores.CLASE_ROJO)
+                    BotonSimondize(miViewModel, Colores.CLASE_ROJO,toneGen)
                     Spacer(Modifier.size(5.dp))
-                    BotonSimondize(miViewModel, Colores.CLASE_VERDE)
+                    BotonSimondize(miViewModel, Colores.CLASE_VERDE,toneGen)
                 }
                 Spacer(Modifier.size(5.dp))
                 Row {
-                    BotonSimondize(miViewModel, Colores.CLASE_AZUL)
+                    BotonSimondize(miViewModel, Colores.CLASE_AZUL,toneGen)
                     Spacer(Modifier.size(5.dp))
-                    BotonSimondize(miViewModel, Colores.CLASE_AMARILLO)
+                    BotonSimondize(miViewModel, Colores.CLASE_AMARILLO,toneGen)
                 }
             }
         }
@@ -67,10 +111,8 @@ fun Interfaz(miViewModel: MyViewModel) {
 
     }
 }
-
-
 @Composable
-fun BotonSimondize(miViewModel: MyViewModel, enum_color: Colores) {
+fun BotonSimondize(miViewModel: MyViewModel, enum_color: Colores, toneGen: ToneGenerator) {
     val activo by miViewModel.botonActivo.observeAsState(-1)
     val isActive = activo == enum_color.ordinal
     Column(
@@ -79,14 +121,24 @@ fun BotonSimondize(miViewModel: MyViewModel, enum_color: Colores) {
     ) {
 
         Button(
-            onClick = { miViewModel.comprobar(enum_color.ordinal)},
+            onClick = {
+                    // 🔊 Sonido manual al pulsar
+                    when (enum_color.ordinal) {
+                        0 -> toneGen.startTone(ToneGenerator.TONE_DTMF_1, 200)
+                        1 -> toneGen.startTone(ToneGenerator.TONE_DTMF_2, 200)
+                        2 -> toneGen.startTone(ToneGenerator.TONE_DTMF_3, 200)
+                        3 -> toneGen.startTone(ToneGenerator.TONE_DTMF_4, 200)
+                    }
+            miViewModel.comprobar(enum_color.ordinal)},
             colors = ButtonDefaults.buttonColors(
-                containerColor = if (isActive) enum_color.color.copy(
-                    alpha = 0.4f,
-                    0.5f
-                ) else enum_color.color
+                containerColor = if (isActive)
+                    enum_color.color.copy(alpha = 0.4f)
+                else enum_color.color
             ),
-            modifier = Modifier.size(150.dp, 250.dp).border(6.dp,Color.Black,RoundedCornerShape(6.dp)).padding(3.dp),
+            modifier = Modifier
+                .size(150.dp, 250.dp)
+                .border(6.dp, Color.Black, RoundedCornerShape(6.dp))
+                .padding(3.dp),
             shape = RoundedCornerShape(10.dp)
         ) {
             Text(text = enum_color.txt, fontSize = 0.sp)
@@ -102,7 +154,10 @@ fun BotonStart(miViewModel: MyViewModel) {
         colors = ButtonDefaults.buttonColors(
             containerColor = Color(0xFF14B8CC)
         ),
-        modifier = Modifier.size(160.dp, 70.dp).border(6.dp,Color.Black,RoundedCornerShape(6.dp)).padding(3.dp),
+        modifier = Modifier
+            .size(160.dp, 70.dp)
+            .border(6.dp, Color.Black, RoundedCornerShape(6.dp))
+            .padding(3.dp),
         shape = RoundedCornerShape(10.dp)
     ) {
         Text(text = "Start", fontSize = 20.sp)
@@ -115,7 +170,8 @@ fun Puntuacion(model: MyViewModel, modifier: Modifier = Modifier) {
         Column(
             modifier = modifier
                 .fillMaxWidth(0.9f)
-                .size(70.dp).border(10.dp, Color.Black, RoundedCornerShape(10.dp))
+                .size(70.dp)
+                .border(10.dp, Color.Black, RoundedCornerShape(10.dp))
                 .padding(3.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
@@ -136,7 +192,8 @@ fun Ronda(miViewModel: MyViewModel) {
     Box(
         modifier = Modifier
             .fillMaxWidth(0.9f)
-            .size(70.dp).border(10.dp, Color.Black, RoundedCornerShape(10.dp))
+            .size(70.dp)
+            .border(10.dp, Color.Black, RoundedCornerShape(10.dp))
             .padding(3.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -155,5 +212,6 @@ fun Ronda(miViewModel: MyViewModel) {
 fun IUPreview() {
     Interfaz(MyViewModel())
 }
+
 
 
