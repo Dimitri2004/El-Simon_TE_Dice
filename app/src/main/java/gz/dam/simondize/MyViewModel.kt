@@ -1,5 +1,8 @@
 package gz.dam.simondize
 
+import android.media.AudioFormat
+import android.media.AudioManager
+import android.media.AudioTrack
 import android.util.Log
 import androidx.compose.material3.ListItemColors
 import androidx.lifecycle.MutableLiveData
@@ -9,6 +12,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlin.math.PI
+import kotlin.math.sin
 
 class MyViewModel(): ViewModel() {
     private val TAG_LOG: String = "miDebug"
@@ -57,8 +63,9 @@ class MyViewModel(): ViewModel() {
                 botonActivo.value = color
                 delay(200)  // Duración del color activo
                 botonActivo.value = -1
-                delay(150)  // Pausa entre colores
+                delay(200)  // Pausa entre colores
             }
+            delay(200)
             for (color in secuencia) {
                 secuenciaColor.add(colores[color])
             }
@@ -89,7 +96,7 @@ class MyViewModel(): ViewModel() {
         }
     fun comprobar(ordinal: Int) {
 
-        estadosAuxiliares()
+//        estadosAuxiliares()
         secuenciaColor.clear()
         if (estadoLiveData.value != Estado.SIGUIENDO) return
         var indiceJugador = indiceJugador.value ?: 0
@@ -112,19 +119,44 @@ class MyViewModel(): ViewModel() {
         }
     }
 
-    fun estadosAuxiliares(){
-        viewModelScope.launch {
-            var estadoAux = EstadosAuxiliares.AUX1
+//    fun estadosAuxiliares(){
+//        viewModelScope.launch {
+//            var estadoAux = EstadosAuxiliares.AUX1
+//
+//            // hacemos un cambio a tres estados auxiliares
+//            Log.d(TAG_LOG, "estado (corutina): ${estadoAux}")
+//            delay(1500)
+//            estadoAux = EstadosAuxiliares.AUX2
+//            Log.d(TAG_LOG, "estado (corutina): ${estadoAux}")
+//            delay(1500)
+//            estadoAux = EstadosAuxiliares.AUX3
+//            Log.d(TAG_LOG, "estado (corutina): ${estadoAux}")
+//            delay(1500)
+//        }
+//    }
+    suspend fun reproducirTono(frecuencia: Double, duracionMs: Int) {
+        withContext(Dispatchers.Default) {
+            val sampleRate = 44100
+            val numSamples = duracionMs * sampleRate / 1000
+            val samples = DoubleArray(numSamples)
+            val buffer = ShortArray(numSamples)
+            for (i in samples.indices) {
+                samples[i] = sin(2 * PI * i / (sampleRate / frecuencia))
+                buffer[i] = (samples[i] * Short.MAX_VALUE).toInt().toShort()
+            }
 
-            // hacemos un cambio a tres estados auxiliares
-            Log.d(TAG_LOG, "estado (corutina): ${estadoAux}")
-            delay(1500)
-            estadoAux = EstadosAuxiliares.AUX2
-            Log.d(TAG_LOG, "estado (corutina): ${estadoAux}")
-            delay(1500)
-            estadoAux = EstadosAuxiliares.AUX3
-            Log.d(TAG_LOG, "estado (corutina): ${estadoAux}")
-            delay(1500)
+            val audioTrack = AudioTrack(
+                AudioManager.STREAM_MUSIC,
+                sampleRate,
+                AudioFormat.CHANNEL_OUT_MONO,
+                AudioFormat.ENCODING_PCM_16BIT,
+                buffer.size * 2,
+                AudioTrack.MODE_STATIC
+            )
+            audioTrack.write(buffer, 0, buffer.size)
+            audioTrack.play()
+            delay(duracionMs.toLong())
+            audioTrack.release()
         }
     }
 
