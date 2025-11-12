@@ -2,9 +2,6 @@
 
 package gz.dam.simondize
 
-import android.media.AudioFormat
-import android.media.AudioManager
-import android.media.AudioTrack
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -53,6 +50,7 @@ fun Interfaz(miViewModel: MyViewModel) {
             2 -> reproducirTono(329.63, 150) // MI
             3 -> reproducirTono(349.23, 150) // FA
         }
+        delay(50)
     }
     LaunchedEffect(error) {
         if (error) {
