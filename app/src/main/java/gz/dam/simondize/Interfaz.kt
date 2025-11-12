@@ -147,8 +147,6 @@ fun BotonSimondize(miViewModel: MyViewModel, enum_color: Colores) {
         }
     }
 }
-
-
 @Composable
 fun BotonStart(miViewModel: MyViewModel) {
 
