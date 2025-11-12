@@ -2,6 +2,9 @@
 
 package gz.dam.simondize
 
+import android.media.AudioFormat
+import android.media.AudioManager
+import android.media.AudioTrack
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -27,8 +30,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.*
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlin.math.PI
+import kotlin.math.sin
 
 
 @Composable
@@ -41,25 +48,19 @@ fun Interfaz(miViewModel: MyViewModel) {
     // Sonar automáticamente cuando el ViewModel activa un botón
     LaunchedEffect(botonActivo) {
         when (botonActivo) {
-            0 -> miViewModel.reproducirTono(261.63, 150) // DO
-            1 -> miViewModel.reproducirTono(293.66, 150) // RE
-            2 -> miViewModel.reproducirTono(329.63, 150) // MI
-            3 -> miViewModel.reproducirTono(349.23, 150) // FA
+            0 -> reproducirTono(261.63, 150) // DO
+            1 -> reproducirTono(293.66, 150) // RE
+            2 -> reproducirTono(329.63, 150) // MI
+            3 -> reproducirTono(349.23, 150) // FA
         }
-        delay(50)
     }
     LaunchedEffect(error) {
         if (error) {
             try {
-                // Melodía descendente FA–MI–RE–DO
-                val notas = listOf(
-                    293.66, // Re
-                    329.63, // MI
-                    349.23, // FA
-                    261.63  // DO
-                )
+                // Melodía descendente RE–MI–FA–DO
+                val notas = listOf(293.66,329.63,349.23,261.63)
                 for (nota in notas) {
-                    miViewModel.reproducirTono(nota, 250)
+                    reproducirTono(nota, 200)
                     delay(200)
                 }
             } catch (e: Exception) {
@@ -115,30 +116,21 @@ fun Interfaz(miViewModel: MyViewModel) {
 fun BotonSimondize(miViewModel: MyViewModel, enum_color: Colores) {
     val activo by miViewModel.botonActivo.observeAsState(-1)
     val isActive = activo == enum_color.ordinal
-
-
     val scope = rememberCoroutineScope()
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-
         Button(
             onClick = {
-                // Primero: reproducimos la nota correspondiente al color
                 scope.launch {
                     when (enum_color.ordinal) {
-                        0 -> miViewModel.reproducirTono(261.63, 100) // DO
-                        0 ->delay(150)
-                        1 -> miViewModel.reproducirTono(293.66, 100) // RE
-                        1 ->delay(150)
-                        2 -> miViewModel.reproducirTono(329.63, 100) // MI
-                        2 ->delay(150)
-                        3 -> miViewModel.reproducirTono(349.23, 100) // FA
-                        3 ->delay(150)
+                        0 -> reproducirTono(261.63, 150) // DO
+                        1 -> reproducirTono(293.66, 150) // RE
+                        2 -> reproducirTono(329.63, 150) // MI
+                        3 -> reproducirTono(349.23, 150) // FA
                     }
                 }
-
                 miViewModel.comprobar(enum_color.ordinal)},
             colors = ButtonDefaults.buttonColors(
                 containerColor = if (isActive)
@@ -156,10 +148,12 @@ fun BotonSimondize(miViewModel: MyViewModel, enum_color: Colores) {
     }
 }
 
+
 @Composable
 fun BotonStart(miViewModel: MyViewModel) {
+
     Button(
-        onClick = { miViewModel.crearRandom() },
+        onClick = {miViewModel.crearRandom()},
         colors = ButtonDefaults.buttonColors(
             containerColor = Color(0xFF14B8CC)
         ),
@@ -195,7 +189,33 @@ fun Puntuacion(model: MyViewModel, modifier: Modifier = Modifier) {
     }
 }
 
+fun reproducirTono(frecuencia: Double, duracionMs: Int) {
+    val sampleRate = 44100
+    val numSamples = (duracionMs / 1000.0 * sampleRate).toInt()
+    val buffer = ShortArray(numSamples)
 
+    // Generar la onda senoidal
+    for (i in buffer.indices) {
+        val angle = 2.0 * PI * i * frecuencia / sampleRate
+        buffer[i] = (sin(angle) * Short.MAX_VALUE).toInt().toShort()
+    }
+
+    // Crear un AudioTrack para reproducir el tono
+    val audioTrack = AudioTrack(
+        AudioManager.STREAM_MUSIC,
+        sampleRate,
+        AudioFormat.CHANNEL_OUT_MONO,
+        AudioFormat.ENCODING_PCM_16BIT,
+        buffer.size * 2,
+        AudioTrack.MODE_STATIC
+    )
+
+    audioTrack.write(buffer, 0, buffer.size)
+    audioTrack.play()
+    // Detener luego de la duración
+    Thread.sleep(duracionMs.toLong())
+    audioTrack.release()
+}
 @Composable
 fun Ronda(miViewModel: MyViewModel) {
     val ronda by miViewModel.ronda.observeAsState(0)
