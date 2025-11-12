@@ -1,6 +1,7 @@
+@file:Suppress("DUPLICATE_BRANCH_CONDITION_IN_WHEN")
+
 package gz.dam.simondize
 
-import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -25,57 +26,56 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import android.media.AudioManager
-import android.media.ToneGenerator
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 
 @Composable
 fun Interfaz(miViewModel: MyViewModel) {
 
     // 🎵 Creamos un ToneGenerator que usaremos para los sonidos
-    val toneGen = remember { ToneGenerator(AudioManager.STREAM_MUSIC, 100) }
 
     val botonActivo by miViewModel.botonActivo.observeAsState(-1)
     val error by miViewModel.errorLiveData.observeAsState(false)
-    // 🔔 Sonar automáticamente cuando el ViewModel activa un botón
+    // Sonar automáticamente cuando el ViewModel activa un botón
     LaunchedEffect(botonActivo) {
         when (botonActivo) {
-            0 -> toneGen.startTone(ToneGenerator.TONE_DTMF_1, 200) // DO
-            1 -> toneGen.startTone(ToneGenerator.TONE_DTMF_2, 200) // RE
-            2 -> toneGen.startTone(ToneGenerator.TONE_DTMF_3, 200) // MI
-            3 -> toneGen.startTone(ToneGenerator.TONE_DTMF_4, 200) // FA
+            0 -> miViewModel.reproducirTono(261.63, 150) // DO
+            1 -> miViewModel.reproducirTono(293.66, 150) // RE
+            2 -> miViewModel.reproducirTono(329.63, 150) // MI
+            3 -> miViewModel.reproducirTono(349.23, 150) // FA
         }
+        delay(50)
     }
     LaunchedEffect(error) {
         if (error) {
-            // Melodía descendente FA–MI–RE–DO
-            val notas = listOf(
-                ToneGenerator.TONE_DTMF_4,
-                ToneGenerator.TONE_DTMF_3,
-                ToneGenerator.TONE_DTMF_2,
-                ToneGenerator.TONE_DTMF_1
-            )
-            for (nota in notas) {
-                toneGen.startTone(nota, 150)
-                kotlinx.coroutines.delay(240)
+            try {
+                // Melodía descendente FA–MI–RE–DO
+                val notas = listOf(
+                    293.66, // Re
+                    329.63, // MI
+                    349.23, // FA
+                    261.63  // DO
+                )
+                for (nota in notas) {
+                    miViewModel.reproducirTono(nota, 250)
+                    delay(200)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                // Asegura que el flag se resetee incluso si hubo un error
+                miViewModel.errorLiveData.value = false
             }
-            // Reseteamos el flag
-            miViewModel.errorLiveData.value = false
         }
     }
 
-    // 🧹 Liberar recursos al salir
-    DisposableEffect(Unit) {
-        onDispose { toneGen.release() }
-    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF9A825))
+            .background(Color(0xFFB9F6CA))
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
@@ -90,15 +90,15 @@ fun Interfaz(miViewModel: MyViewModel) {
         ) {
             Column {
                 Row {
-                    BotonSimondize(miViewModel, Colores.CLASE_ROJO,toneGen)
+                    BotonSimondize(miViewModel, Colores.CLASE_ROJO)
                     Spacer(Modifier.size(5.dp))
-                    BotonSimondize(miViewModel, Colores.CLASE_VERDE,toneGen)
+                    BotonSimondize(miViewModel, Colores.CLASE_VERDE)
                 }
                 Spacer(Modifier.size(5.dp))
                 Row {
-                    BotonSimondize(miViewModel, Colores.CLASE_AZUL,toneGen)
+                    BotonSimondize(miViewModel, Colores.CLASE_AZUL)
                     Spacer(Modifier.size(5.dp))
-                    BotonSimondize(miViewModel, Colores.CLASE_AMARILLO,toneGen)
+                    BotonSimondize(miViewModel, Colores.CLASE_AMARILLO)
                 }
             }
         }
@@ -112,9 +112,12 @@ fun Interfaz(miViewModel: MyViewModel) {
     }
 }
 @Composable
-fun BotonSimondize(miViewModel: MyViewModel, enum_color: Colores, toneGen: ToneGenerator) {
+fun BotonSimondize(miViewModel: MyViewModel, enum_color: Colores) {
     val activo by miViewModel.botonActivo.observeAsState(-1)
     val isActive = activo == enum_color.ordinal
+
+
+    val scope = rememberCoroutineScope()
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
@@ -122,14 +125,21 @@ fun BotonSimondize(miViewModel: MyViewModel, enum_color: Colores, toneGen: ToneG
 
         Button(
             onClick = {
-                    // 🔊 Sonido manual al pulsar
+                // Primero: reproducimos la nota correspondiente al color
+                scope.launch {
                     when (enum_color.ordinal) {
-                        0 -> toneGen.startTone(ToneGenerator.TONE_DTMF_1, 200)
-                        1 -> toneGen.startTone(ToneGenerator.TONE_DTMF_2, 200)
-                        2 -> toneGen.startTone(ToneGenerator.TONE_DTMF_3, 200)
-                        3 -> toneGen.startTone(ToneGenerator.TONE_DTMF_4, 200)
+                        0 -> miViewModel.reproducirTono(261.63, 100) // DO
+                        0 ->delay(150)
+                        1 -> miViewModel.reproducirTono(293.66, 100) // RE
+                        1 ->delay(150)
+                        2 -> miViewModel.reproducirTono(329.63, 100) // MI
+                        2 ->delay(150)
+                        3 -> miViewModel.reproducirTono(349.23, 100) // FA
+                        3 ->delay(150)
                     }
-            miViewModel.comprobar(enum_color.ordinal)},
+                }
+
+                miViewModel.comprobar(enum_color.ordinal)},
             colors = ButtonDefaults.buttonColors(
                 containerColor = if (isActive)
                     enum_color.color.copy(alpha = 0.4f)
@@ -144,7 +154,6 @@ fun BotonSimondize(miViewModel: MyViewModel, enum_color: Colores, toneGen: ToneG
             Text(text = enum_color.txt, fontSize = 0.sp)
         }
     }
-
 }
 
 @Composable
@@ -185,6 +194,7 @@ fun Puntuacion(model: MyViewModel, modifier: Modifier = Modifier) {
 
     }
 }
+
 
 @Composable
 fun Ronda(miViewModel: MyViewModel) {
