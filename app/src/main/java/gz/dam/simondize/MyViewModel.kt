@@ -134,31 +134,7 @@ class MyViewModel(): ViewModel() {
 //            delay(1500)
 //        }
 //    }
-    suspend fun reproducirTono(frecuencia: Double, duracionMs: Int) {
-        withContext(Dispatchers.Default) {
-            val sampleRate = 44100
-            val numSamples = duracionMs * sampleRate / 1000
-            val samples = DoubleArray(numSamples)
-            val buffer = ShortArray(numSamples)
-            for (i in samples.indices) {
-                samples[i] = sin(2 * PI * i / (sampleRate / frecuencia))
-                buffer[i] = (samples[i] * Short.MAX_VALUE).toInt().toShort()
-            }
 
-            val audioTrack = AudioTrack(
-                AudioManager.STREAM_MUSIC,
-                sampleRate,
-                AudioFormat.CHANNEL_OUT_MONO,
-                AudioFormat.ENCODING_PCM_16BIT,
-                buffer.size * 2,
-                AudioTrack.MODE_STATIC
-            )
-            audioTrack.write(buffer, 0, buffer.size)
-            audioTrack.play()
-            delay(duracionMs.toLong())
-            audioTrack.release()
-        }
-    }
 
 
 }
