@@ -1,28 +1,31 @@
 package gz.dam.simondize
 
 import android.util.Log
+import androidx.compose.material3.ListItemColors
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class MyViewModel(): ViewModel() {
-    private val TAG_LOG = "miDebug"
-
+    private val TAG_LOG: String = "miDebug"
 
 
     // Estado del juego
     val errorLiveData: MutableLiveData<Boolean> = MutableLiveData(false)
     val estadoLiveData: MutableLiveData<Estado> = MutableLiveData(Estado.INICIO)
+    private val secuenciaColor: MutableList<String> = mutableListOf<String>()
+
+    val nombreColores: MutableLiveData<MutableList<String>> = MutableLiveData<MutableList<String>>(secuenciaColor)
 
     // Secuencia de colores (0=Rojo,1=Verde,2=Azul,3=Amarillo)
     private val secuencia = mutableListOf<Int>()
-    private val secuenciaColor = mutableListOf<String>()
     private var indiceJugador : MutableLiveData<Int> = MutableLiveData(0)
     // Lista fija de nombres de colores por índice (0=Rojo,1=Verde,2=Azul,3=Amarillo)
-    val colores: MutableList<String> =mutableListOf<String>("rojo","verde","azul","amarillo")
+    val colores: MutableList<String> =mutableListOf("rojo","verde","azul","amarillo")
 
     // Puntuación
     val puntuacion: MutableLiveData<Int> = MutableLiveData(0)
@@ -45,7 +48,7 @@ class MyViewModel(): ViewModel() {
         secuencia.add(nuevo)
         indiceJugador.value= 0
         mostrarSecuencia()
-        Log.d(TAG_LOG, " Estado: ${estadoLiveData.value}")
+        Log.d(TAG_LOG, "Estado: ${estadoLiveData.value}")
     }
 
     fun mostrarSecuencia() {
@@ -55,23 +58,24 @@ class MyViewModel(): ViewModel() {
                 delay(200)  // Duración del color activo
                 botonActivo.value = -1
                 delay(150)  // Pausa entre colores
+            }
+            for (color in secuencia) {
+                secuenciaColor.add(colores[color])
+            }
+            Log.d(TAG_LOG, "Generada secuencia Secuencia:${nombreColores.value}")
 
-            }
-            for (cor in colores) {
-                secuenciaColor.add(cor)
-                Log.d(TAG_LOG, " Estado: ${estadoLiveData.value}  Secuencia:$secuenciaColor")
-            }
             estadoLiveData.value = Estado.SIGUIENDO
         }
 
     }
         fun generarSiguienteRonda() {
             estadoLiveData.value= Estado.SIGUIENDO
+            secuenciaColor.clear()
             ronda.value = (ronda.value ?: 1) + 1
             val nuevo = (0..3).random()      // generamos un nuevo color ale
             secuencia.add(nuevo) // lo añadimos a la secuencia
             indiceJugador.value= 0          // reiniciamos el índice del jugador
-            Log.d( TAG_LOG, "Nueva secuencia. $secuencia Estado: ${estadoLiveData.value}" )
+            Log.d( TAG_LOG, "Nueva secuencia creada. Estado: ${estadoLiveData.value}")
             mostrarSecuencia()              // mostramos la secuencia actualizada
         }
         fun reiniciarJuego() {
@@ -82,10 +86,11 @@ class MyViewModel(): ViewModel() {
             ronda.value = 1
             estadoLiveData.value = Estado.INICIO
             Log.d( TAG_LOG, "Juego reiniciado. Estado :${estadoLiveData.value}" )
-
         }
-
     fun comprobar(ordinal: Int) {
+
+        estadosAuxiliares()
+        secuenciaColor.clear()
         if (estadoLiveData.value != Estado.SIGUIENDO) return
         var indiceJugador = indiceJugador.value ?: 0
         if (secuencia[indiceJugador] == ordinal) {
@@ -104,6 +109,22 @@ class MyViewModel(): ViewModel() {
             Log.d(TAG_LOG, "Secuencia incorrecta. Estado:${estadoLiveData.value}")
             errorLiveData.value=true
             reiniciarJuego()
+        }
+    }
+
+    fun estadosAuxiliares(){
+        viewModelScope.launch {
+            var estadoAux = EstadosAuxiliares.AUX1
+
+            // hacemos un cambio a tres estados auxiliares
+            Log.d(TAG_LOG, "estado (corutina): ${estadoAux}")
+            delay(1500)
+            estadoAux = EstadosAuxiliares.AUX2
+            Log.d(TAG_LOG, "estado (corutina): ${estadoAux}")
+            delay(1500)
+            estadoAux = EstadosAuxiliares.AUX3
+            Log.d(TAG_LOG, "estado (corutina): ${estadoAux}")
+            delay(1500)
         }
     }
 
